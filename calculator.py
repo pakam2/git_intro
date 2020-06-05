@@ -1,2 +1,4 @@
 class Calculator():
-  pass
+  # dodajemy funkcje suma
+
+  # doda³em funckje mno¿enie
