@@ -1,0 +1,32 @@
+name: Trigger Webhook on Push to Main
+
+on:
+  push:
+    branches:
+      - main # Trigger the workflow only when code is pushed to the "main" branch
+
+jobs:
+  trigger-webhook:
+    runs-on: ubuntu-latest # Use GitHub's hosted Ubuntu runner
+
+    steps:
+      - name: Send Webhook Request
+        env: 
+          WEBHOOK_URL: "https://codemie.hsi-airun-ei.hsp.philips.com/code-assistant-api/v1/webhooks/ReviewerWebHook"
+        run: |
+          echo "Triggering webhook..."
+          
+          # Make the POST request and capture HTTP response code
+          RESPONSE_CODE=$(curl --silent --write-out "%{http_code}" --output /dev/null \
+            -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json")
+          
+          if [ "$RESPONSE_CODE" -ne 200 ] && [ "$RESPONSE_CODE" -ne 201 ]; then
+            echo "::error::Webhook request failed. HTTP response code: $RESPONSE_CODE"
+            if [ "$RESPONSE_CODE" -eq 000 ]; then
+              echo "::error::Connection issue or invalid URL. Please check the webhook endpoint."
+            fi
+            exit 1 # Mark the workflow as failed
+          else
+            echo "Webhook triggered successfully. HTTP response code: $RESPONSE_CODE"
+          fi
