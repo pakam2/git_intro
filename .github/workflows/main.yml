@@ -1,0 +1,21 @@
+name: Call Webhook on PR to feature/new_feature
+
+on:
+  pull_request:
+    # Trigger action only when a new pull request is opened
+    types:
+      - opened
+
+jobs:
+  call-webhook:
+    if: github.event.pull_request.base.ref == 'dev' # Ensure this runs only if the PR targets "feature/new_feature"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call the webhook
+        env:
+          MERGE_REQUEST_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"merge_request": "'"$MERGE_REQUEST_URL"'"}' \
+            https://codemie.lab.epam.com/code-assistant-api/v1/webhooks/My-web-hook
