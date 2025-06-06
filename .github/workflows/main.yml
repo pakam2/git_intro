@@ -1,32 +1,21 @@
-name: Trigger Webhook on Push to Main
+name: Call Webhook on PR to feature/new_feature
 
 on:
-  push:
-    branches:
-      - main # Trigger the workflow only when code is pushed to the "main" branch
+  pull_request:
+    # Trigger action only when a new pull request is opened
+    types:
+      - opened
 
 jobs:
-  trigger-webhook:
-    runs-on: ubuntu-latest # Use GitHub's hosted Ubuntu runner
-
+  call-webhook:
+    if: github.event.pull_request.base.ref == 'dev' # Ensure this runs only if the PR targets "feature/new_feature"
+    runs-on: ubuntu-latest
     steps:
-      - name: Send Webhook Request
-        env: 
-          WEBHOOK_URL: "https://codemie.hsi-airun-ei.hsp.philips.com/code-assistant-api/v1/webhooks/ReviewerWebHook"
+      - name: Call the webhook
+        env:
+          MERGE_REQUEST_URL: ${{ github.event.pull_request.html_url }}
         run: |
-          echo "Triggering webhook..."
-          
-          # Make the POST request and capture HTTP response code
-          RESPONSE_CODE=$(curl --silent --write-out "%{http_code}" --output /dev/null \
-            -X POST "$WEBHOOK_URL" \
-            -H "Content-Type: application/json")
-          
-          if [ "$RESPONSE_CODE" -ne 200 ] && [ "$RESPONSE_CODE" -ne 201 ]; then
-            echo "::error::Webhook request failed. HTTP response code: $RESPONSE_CODE"
-            if [ "$RESPONSE_CODE" -eq 000 ]; then
-              echo "::error::Connection issue or invalid URL. Please check the webhook endpoint."
-            fi
-            exit 1 # Mark the workflow as failed
-          else
-            echo "Webhook triggered successfully. HTTP response code: $RESPONSE_CODE"
-          fi
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"merge_request": "'"$MERGE_REQUEST_URL"'"}' \
+            https://codemie.lab.epam.com/code-assistant-api/v1/webhooks/My-web-hook
